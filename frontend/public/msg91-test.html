@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MSG91 WhatsApp OTP Test</title>
+</head>
+
+<body>
+
+    <h1>MSG91 WhatsApp OTP Test</h1>
+
+    <input id="mobile" type="tel" placeholder="919999999999" />
+
+    <button id="sendButton">
+        Send WhatsApp OTP
+    </button>
+
+    <br />
+    <br />
+
+    <input id="otp" type="text" placeholder="Enter OTP" />
+
+    <button id="verifyButton">
+        Verify OTP
+    </button>
+
+    <script>
+        var configuration = {
+            widgetId: "36696a6f674a343435373730",
+            tokenAuth: "475537TcZAdFAQWQRx6aa2c8c6P1",
+
+            exposeMethods: true,
+
+            success: function (data) {
+                console.log(
+                    "MSG91 SUCCESS:",
+                    data
+                );
+            },
+
+            failure: function (error) {
+                console.error(
+                    "MSG91 FAILURE:",
+                    error
+                );
+            }
+        };
+
+        console.log(
+            "Loading MSG91..."
+        );
+
+        document
+            .getElementById("sendButton")
+            .addEventListener("click", function () {
+
+                var mobile =
+                    document
+                        .getElementById("mobile")
+                        .value
+                        .replace(/\D/g, "");
+
+                if (mobile.length === 10) {
+                    mobile = "91" + mobile;
+                }
+
+                console.log(
+                    "Mobile:",
+                    mobile
+                );
+
+                console.log(
+                    "sendOtp type:",
+                    typeof window.sendOtp
+                );
+
+                if (
+                    typeof window.sendOtp !==
+                    "function"
+                ) {
+                    console.error(
+                        "sendOtp is not available"
+                    );
+
+                    return;
+                }
+
+                window.sendOtp(
+                    mobile,
+
+                    function (data) {
+                        console.log(
+                            "======================"
+                        );
+
+                        console.log(
+                            "OTP SENT SUCCESSFULLY"
+                        );
+
+                        console.log(
+                            "Response:",
+                            data
+                        );
+
+                        console.log(
+                            "======================"
+                        );
+                    },
+
+                    function (error) {
+                        console.error(
+                            "======================"
+                        );
+
+                        console.error(
+                            "OTP SEND FAILED"
+                        );
+
+                        console.error(
+                            "Error:",
+                            error
+                        );
+
+                        console.error(
+                            "======================"
+                        );
+                    }
+                );
+            });
+
+        document
+            .getElementById("verifyButton")
+            .addEventListener("click", function () {
+
+                var otp =
+                    document
+                        .getElementById("otp")
+                        .value
+                        .trim();
+
+                console.log(
+                    "verifyOtp type:",
+                    typeof window.verifyOtp
+                );
+
+                if (
+                    typeof window.verifyOtp !==
+                    "function"
+                ) {
+                    console.error(
+                        "verifyOtp is not available"
+                    );
+
+                    return;
+                }
+
+                window.verifyOtp(
+                    otp,
+
+                    function (data) {
+                        console.log(
+                            "OTP VERIFIED:",
+                            data
+                        );
+                    },
+
+                    function (error) {
+                        console.error(
+                            "OTP VERIFICATION FAILED:",
+                            error
+                        );
+                    }
+                );
+            });
+    </script>
+
+    <script src="https://verify.msg91.com/otp-provider.js" onload="initSendOTP(configuration)"></script>
+
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-from sqlalchemy import String, Text, DateTime, JSON
+from sqlalchemy import String, Text, DateTime, JSON ,ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from typing import Optional
@@ -15,8 +15,9 @@ class Conversation(Base):
         autoincrement=True
     )
 
-    user_id: Mapped[str] = mapped_column(
-        String(255),
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
         index=True
     )
 
@@ -36,7 +37,7 @@ class Conversation(Base):
     extra_data: Mapped[Optional[dict]] = mapped_column(
     JSON,
     nullable=True
-)
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

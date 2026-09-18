@@ -19,36 +19,50 @@ from app.workflows.workflow_router import (
 )
 
 router = APIRouter()
+def normalize_workflow(ai_response: dict) -> dict:
+    workflow = ai_response.get("workflow")
 
+    if isinstance(workflow, str):
+        ai_response["workflow"] = {
+            "step": workflow
+        }
 
-@router.post(
-    "/chat",
-    response_model=ChatResponse
-)
+    elif workflow is None:
+        ai_response["workflow"] = None
+
+    elif not isinstance(workflow, dict):
+        ai_response["workflow"] = {
+            "step": "unknown"
+        }
+
+    return ai_response
+
+@router.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-
     history = await get_recent_conversations(
         db=db,
-        user_id=request.user_id or "anonymous"
+        user_id=request.user_id,
     )
 
     ai_response = ask_ai(
         message=request.message,
-        history=history
+        history=history,
     )
+
+    ai_response = normalize_workflow(ai_response)
+
     ai_response = await route_workflow(ai_response)
-    
 
     await save_conversation(
         db=db,
-        user_id=request.user_id or "anonymous",
+        user_id=request.user_id,
         message=request.message,
         ai_response=ai_response["message"],
         intent=ai_response["intent"],
-        extra_data=ai_response.get("metadata")
+        extra_data=ai_response.get("metadata"),
     )
 
     return ChatResponse(**ai_response)

@@ -1,10 +1,11 @@
+from typing import Any
+
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
 
 
 class ChatRequest(BaseModel):
     message: str
-    user_id: Optional[str] = None
+    user_id: int
 
 
 class ChatResponse(BaseModel):
@@ -16,5 +17,5 @@ class ChatResponse(BaseModel):
     requires_business_name: bool = False
     requires_confirmation: bool = False
 
-    metadata: Optional[Dict[str, Any]] = None
-    workflow: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
+    workflow: dict[str, Any] | None = None

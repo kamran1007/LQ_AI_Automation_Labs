@@ -1,39 +1,38 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.conversation import Conversation
 
 
 async def save_conversation(
     db: AsyncSession,
-    user_id: str,
+    user_id: int,
     message: str,
     ai_response: str,
     intent: str,
-    extra_data: dict | None = None
+    extra_data: dict | None = None,
 ):
-
     conversation = Conversation(
         user_id=user_id,
         message=message,
         ai_response=ai_response,
         intent=intent,
-        extra_data=extra_data
+        extra_data=extra_data,
     )
 
     db.add(conversation)
 
     await db.commit()
-
     await db.refresh(conversation)
 
     return conversation
 
+
 async def get_recent_conversations(
     db: AsyncSession,
-    user_id: str,
-    limit: int = 5
+    user_id: int,
+    limit: int = 5,
 ):
-
     query = (
         select(Conversation)
         .where(Conversation.user_id == user_id)

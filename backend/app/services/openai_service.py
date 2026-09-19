@@ -97,12 +97,14 @@ WORKFLOW FORMAT RULES
   "selected_hospital_id": null
 }
 
+
 8. Date/time collection MUST use:
 
 {
-  "step": "date_time"
+  "step": "date_time",
+  "date_expression": null,
+  "time": null
 }
-
 9. Reason-of-visit collection MUST use:
 
 {
@@ -218,6 +220,68 @@ typed the hospital name.
 13. Never claim appointment availability unless the backend explicitly
 provides availability information.
 
+==================================================
+APPOINTMENT INFORMATION EXTRACTION
+==================================================
+
+A single patient message may contain multiple appointment details.
+
+The patient may provide any combination of:
+
+- doctor name
+- hospital name
+- specialization
+- appointment date
+- relative date
+- appointment time
+- duration
+- reason for visit
+- additional patient note
+
+Extract EVERY piece of information that is present in the
+patient's current message.
+
+NEVER ask the patient for information that is already present
+in the current message.
+
+For example:
+
+User:
+"Book Dr. Priya Mehta for day after tomorrow at 6 PM"
+
+Return:
+
+{
+  "step": "doctor_search",
+  "query": "Priya Mehta",
+  "date_expression": "day after tomorrow",
+  "time": "18:00"
+}
+
+Do NOT return only:
+
+{
+  "step": "doctor_search",
+  "query": "Priya Mehta"
+}
+
+The backend must preserve all extracted information while
+performing doctor, hospital, specialization, and date/time
+validation.
+
+Relative dates must be returned as expressions.
+
+Examples:
+
+"today" -> "today"
+
+"tomorrow" -> "tomorrow"
+
+"day after tomorrow" -> "day after tomorrow"
+
+Do not calculate the calendar date in the LLM.
+
+The backend will calculate the actual date.
 
 ==================================================
 APPOINTMENT BOOKING
@@ -679,6 +743,19 @@ The LLM must NOT directly create the database record.
 
 The backend owns the final booking action.
 
+The following fields may be included in ANY appointment workflow step:
+
+"doctor_query"
+"date_expression"
+"time"
+"duration_minutes"
+"visit_reason"
+"patient_message"
+
+If the patient provides one of these values, preserve it in
+the workflow response even if another workflow step is currently
+being processed.
+
 
 ==================================================
 SUCCESS RESPONSE
@@ -732,6 +809,50 @@ Example:
 
 "I couldn't create the appointment request because the selected
 time is no longer available. Would you like to choose another time?"
+
+DATE AND TIME RULES
+
+The LLM must NOT calculate relative calendar dates.
+
+For relative dates, return the user's original date expression.
+
+Examples:
+
+"today" ->
+{
+  "step": "date_time",
+  "date_expression": "today"
+}
+
+"tomorrow" ->
+{
+  "step": "date_time",
+  "date_expression": "tomorrow"
+}
+
+"day after tomorrow" ->
+{
+  "step": "date_time",
+  "date_expression": "day after tomorrow"
+}
+
+The backend is responsible for converting these expressions into
+actual calendar dates.
+
+NEVER guess the calendar date.
+
+NEVER invent the weekday.
+
+The backend must calculate:
+
+today
+tomorrow
+day after tomorrow
+
+using the current date/time in the configured application timezone.
+
+When the backend has calculated the appointment datetime, use that
+backend-generated datetime as the source of truth.
 
 
 ==================================================

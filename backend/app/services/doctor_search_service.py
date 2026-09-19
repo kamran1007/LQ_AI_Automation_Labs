@@ -7,6 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.doctor import Doctor
 from app.models.hospital import Hospital
 
+from app.models.doctor import Doctor
+from app.models.hospital import Hospital
+
 
 # =========================================================
 # NORMALIZATION
@@ -274,5 +277,82 @@ async def search_doctors(
         )
 
     print("========== DOCTOR SEARCH END ==========\n")
+
+    return doctors
+
+async def search_doctors_by_specialization(
+    db: AsyncSession,
+    specialization: str,
+) -> list[dict]:
+    """
+    Search active doctors by medical specialization.
+
+    The database is the source of truth.
+    The LLM must never generate doctor records.
+    """
+
+    search_text = specialization.strip().lower()
+
+    print("\n========== SPECIALIZATION SEARCH ==========")
+    print("RAW SPECIALIZATION:", repr(specialization))
+    print("NORMALIZED SPECIALIZATION:", repr(search_text))
+
+    if not search_text:
+        return []
+
+    statement = (
+        select(Doctor, Hospital)
+        .join(
+            Hospital,
+            Doctor.hospital_id == Hospital.id,
+        )
+        .where(
+            Doctor.is_active.is_(True),
+            Hospital.is_active.is_(True),
+            func.lower(Doctor.specialization).contains(search_text),
+        )
+        .order_by(Doctor.name.asc())
+        .limit(20)
+    )
+
+    result = await db.execute(statement)
+
+    rows = result.all()
+
+    print(
+        "SPECIALIZATION MATCH COUNT:",
+        len(rows),
+    )
+
+    doctors = []
+
+    for doctor, hospital in rows:
+
+        print(
+            "MATCH:",
+            doctor.id,
+            doctor.name,
+            "|",
+            doctor.specialization,
+            "|",
+            hospital.name,
+        )
+
+        doctors.append(
+            {
+                "doctor_id": doctor.id,
+                "doctor_name": doctor.name,
+                "specialization": doctor.specialization,
+                "hospital_id": hospital.id,
+                "hospital_name": hospital.name,
+                "city": getattr(
+                    hospital,
+                    "city",
+                    None,
+                ),
+            }
+        )
+
+    print("========== SPECIALIZATION SEARCH END ==========\n")
 
     return doctors

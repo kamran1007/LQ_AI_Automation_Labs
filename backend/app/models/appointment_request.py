@@ -62,6 +62,10 @@ class AppointmentRequest(Base):
         default=30,
         nullable=False
     )
+    visit_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
 
     patient_message: Mapped[str | None] = mapped_column(
         Text,

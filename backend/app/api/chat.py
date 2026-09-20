@@ -191,6 +191,7 @@ async def chat(
                         "patient_message"
                     )
                 ),
+                visit_reason=booking_state.get("visit_reason"),
             )
         )
 
@@ -229,6 +230,7 @@ async def chat(
                 appointment_request
                 .duration_minutes
             ),
+            "visit_reason": appointment_request.visit_reason,
             "status": (
                 appointment_request.status
             ),

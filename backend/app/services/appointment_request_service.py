@@ -13,6 +13,7 @@ async def create_appointment_request(
     requested_start_at: datetime,
     conversation_id: int | None = None,
     duration_minutes: int = 30,
+    visit_reason: str | None = None,
     patient_message: str | None = None,
 ):
     appointment_request = AppointmentRequest(
@@ -22,6 +23,7 @@ async def create_appointment_request(
         conversation_id=conversation_id,
         requested_start_at=requested_start_at,
         duration_minutes=duration_minutes,
+        visit_reason=visit_reason,
         patient_message=patient_message,
         status="pending",
         expires_at=datetime.now().astimezone() + timedelta(hours=24),

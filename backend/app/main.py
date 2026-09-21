@@ -5,6 +5,7 @@ from app.api.chat import router as chat_router
 from app.api.user import router as user_router
 from app.api.auth import router as auth_router
 from app.api.appointment_request import router as appointment_request_router
+from app.api.hospital_appointments import router as hospital_appointments_router
 
 
 
@@ -40,6 +41,11 @@ app.include_router(
 
 app.include_router(
     appointment_request_router,
+    prefix="/ai",
+)
+
+app.include_router(
+    hospital_appointments_router,
     prefix="/ai",
 )
 

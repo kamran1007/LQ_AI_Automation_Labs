@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
-
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.appointment_request import AppointmentRequest
 
 

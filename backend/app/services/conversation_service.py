@@ -1,4 +1,5 @@
 from sqlalchemy import select
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
@@ -84,6 +85,7 @@ async def get_active_appointment_state(
             "ACTIVE BOOKING STATE: "
             "NO APPOINTMENT CONVERSATION FOUND"
         )
+
         return None
 
     extra_data = conversation.extra_data or {}
@@ -121,3 +123,43 @@ async def get_active_appointment_state(
     )
 
     return booking_state
+
+
+async def get_active_appointment_conversation(
+    db: AsyncSession,
+    user_id: int,
+):
+    """
+    Get the latest appointment booking conversation.
+
+    Used to associate the final appointment request
+    with the conversation containing the booking state.
+    """
+
+    query = (
+        select(Conversation)
+        .where(
+            Conversation.user_id == user_id,
+            Conversation.intent == "appointment_booking",
+        )
+        .order_by(
+            Conversation.created_at.desc()
+        )
+        .limit(1)
+    )
+
+    result = await db.execute(query)
+
+    conversation = result.scalar_one_or_none()
+
+    if conversation:
+        print(
+            "ACTIVE APPOINTMENT CONVERSATION ID:",
+            conversation.id,
+        )
+    else:
+        print(
+            "ACTIVE APPOINTMENT CONVERSATION: NONE"
+        )
+
+    return conversation

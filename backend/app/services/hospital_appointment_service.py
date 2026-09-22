@@ -72,3 +72,34 @@ async def get_hospital_appointment_request(
     result = await db.execute(query)
 
     return result.scalar_one_or_none()
+
+async def accept_hospital_appointment_request(
+    db: AsyncSession,
+    appointment_request_id: int,
+    hospital_id: int,
+):
+    query = (
+        select(AppointmentRequest)
+        .where(
+            AppointmentRequest.id == appointment_request_id,
+            AppointmentRequest.hospital_id == hospital_id,
+        )
+    )
+
+    result = await db.execute(query)
+
+    appointment_request = result.scalar_one_or_none()
+
+    if appointment_request is None:
+        return None
+
+    # Only pending requests can be accepted
+    if appointment_request.status != "pending":
+        return appointment_request
+
+    appointment_request.status = "accepted"
+
+    await db.commit()
+    await db.refresh(appointment_request)
+
+    return appointment_request

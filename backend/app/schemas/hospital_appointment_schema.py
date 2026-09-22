@@ -88,3 +88,8 @@ class HospitalAppointmentRequestDetailResponse(BaseModel):
 class HospitalAppointmentRequestDetailApiResponse(BaseModel):
     success: bool
     data: HospitalAppointmentRequestDetailResponse
+
+class HospitalAppointmentRequestActionResponse(BaseModel):
+    success: bool
+    message: str
+    data: HospitalAppointmentRequestResponse

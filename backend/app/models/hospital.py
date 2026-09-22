@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.models.doctor import Doctor
+from app.models.notification import Notification
 from sqlalchemy import (
     String,
     Text,
@@ -96,3 +97,8 @@ class Hospital(Base):
         onupdate=datetime.utcnow,
         nullable=False
     )
+
+    notifications: Mapped[list["Notification"]] = relationship(
+    "Notification",
+    back_populates="hospital",
+)

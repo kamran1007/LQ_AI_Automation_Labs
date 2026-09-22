@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hospital WebSocket Test</title>
+</head>
+
+<body>
+
+    <h2>Hospital WebSocket Test</h2>
+
+    <button onclick="connectWebSocket()">
+        Connect
+    </button>
+
+    <button onclick="sendMessage()">
+        Send Test Message
+    </button>
+
+    <pre id="output"></pre>
+
+    <script>
+
+        let socket;
+
+        function log(message) {
+            document.getElementById("output").textContent +=
+                message + "\n";
+        }
+
+        function connectWebSocket() {
+
+            socket = new WebSocket(
+                "ws://127.0.0.1:8000/ai/hospital/ws/1"
+            );
+
+            socket.onopen = function () {
+                log("CONNECTED");
+            };
+
+            socket.onmessage = function (event) {
+                log(
+                    "SERVER: " +
+                    event.data
+                );
+            };
+
+            socket.onclose = function () {
+                log("DISCONNECTED");
+            };
+
+            socket.onerror = function (error) {
+                log("ERROR");
+                console.error(error);
+            };
+        }
+
+        function sendMessage() {
+
+            if (!socket) {
+                log("Socket not connected");
+                return;
+            }
+
+            if (socket.readyState !== WebSocket.OPEN) {
+                log("Socket is not open");
+                return;
+            }
+
+            socket.send(
+                "Hello Hospital Server"
+            );
+        }
+
+    </script>
+
+</body>
+
+</html>

@@ -6,6 +6,7 @@ from app.api.user import router as user_router
 from app.api.auth import router as auth_router
 from app.api.appointment_request import router as appointment_request_router
 from app.api.hospital_appointments import router as hospital_appointments_router
+from app.api.hospital_websocket import router as hospital_websocket_router
 
 
 
@@ -16,7 +17,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,6 +47,11 @@ app.include_router(
 
 app.include_router(
     hospital_appointments_router,
+    prefix="/ai",
+)
+
+app.include_router(
+    hospital_websocket_router,
     prefix="/ai",
 )
 

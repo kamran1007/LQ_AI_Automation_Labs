@@ -12,6 +12,7 @@ from app.services.conversation_service import (
     save_conversation,
     get_recent_conversations,
     get_active_appointment_state,
+    get_active_appointment_conversation
 )
 
 from app.services.appointment_request_service import (
@@ -49,12 +50,19 @@ async def chat(
     )
 
     # =====================================================
-    # 2. LOAD ACTIVE APPOINTMENT STATE
-    # =====================================================
+# 2. LOAD ACTIVE APPOINTMENT STATE
+# =====================================================
 
     booking_state = await get_active_appointment_state(
         db=db,
         user_id=request.user_id,
+    )
+
+    active_conversation = (
+        await get_active_appointment_conversation(
+            db=db,
+            user_id=request.user_id,
+        )
     )
 
     print("\n======================================")
@@ -63,7 +71,15 @@ async def chat(
     print("MESSAGE:", request.message)
     print("ACTIVE BOOKING STATE:")
     print(booking_state)
-    print("======================================\n")
+
+    print(
+        "ACTIVE CONVERSATION ID:",
+        active_conversation.id
+        if active_conversation
+        else None,
+    )
+
+    print("======================================\n")   
 
     # =====================================================
     # 3. ASK AI
@@ -170,29 +186,37 @@ async def chat(
                 )
             )
 
-        appointment_request = (
-            await create_appointment_request(
-                db=db,
-                patient_id=request.user_id,
-                hospital_id=doctor["hospital_id"],
-                doctor_id=doctor["id"],
-                requested_start_at=(
-                    requested_start_at
-                ),
-                conversation_id=None,
-                duration_minutes=(
-                    appointment.get(
-                        "duration_minutes",
-                        30,
-                    )
-                ),
-                patient_message=(
-                    booking_state.get(
-                        "patient_message"
-                    )
-                ),
-                visit_reason=booking_state.get("visit_reason"),
-            )
+        appointment_request = await create_appointment_request(
+            db=db,
+            patient_id=request.user_id,
+            hospital_id=doctor["hospital_id"],
+            doctor_id=doctor["id"],
+            requested_start_at=requested_start_at,
+
+            conversation_id=(
+                active_conversation.id
+                if active_conversation
+                else None
+            ),
+
+            duration_minutes=(
+                appointment.get(
+                    "duration_minutes",
+                    30,
+                )
+            ),
+
+            patient_message=(
+                booking_state.get(
+                    "patient_message"
+                )
+            ),
+
+            visit_reason=(
+                booking_state.get(
+                    "visit_reason"
+                )
+            ),
         )
 
         ai_response["success"] = True

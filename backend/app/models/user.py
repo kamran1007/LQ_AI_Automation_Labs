@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.user_role import UserRole
+    from app.models.notification import Notification
 
 class User(Base):
     __tablename__ = "users"
@@ -77,4 +78,10 @@ class User(Base):
         "UserRole",
         back_populates="user",
         cascade="all, delete-orphan"
+    )
+
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        foreign_keys="Notification.recipient_user_id",
+        back_populates="recipient",
     )

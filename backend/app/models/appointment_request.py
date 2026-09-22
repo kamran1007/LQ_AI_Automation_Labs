@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from app.models.conversation import Conversation
     from app.models.hospital import Hospital
     from app.models.doctor import Doctor
+    from app.models.notification import Notification
 
 
 class AppointmentRequest(Base):
@@ -112,3 +113,8 @@ class AppointmentRequest(Base):
     conversation: Mapped["Conversation | None"] = relationship(
         "Conversation"
     )
+
+    notifications: Mapped[list["Notification"]] = relationship(
+    "Notification",
+    back_populates="appointment_request",
+)

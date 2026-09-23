@@ -24,6 +24,7 @@ async def save_conversation(
     db.add(conversation)
 
     await db.commit()
+    # await db.flush()
     await db.refresh(conversation)
 
     return conversation

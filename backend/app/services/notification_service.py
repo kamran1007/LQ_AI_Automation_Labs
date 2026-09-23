@@ -1,5 +1,8 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.models.appointment_request import AppointmentRequest
 from app.models.notification import Notification
 from app.services.websocket_manager import manager
 
@@ -7,16 +10,92 @@ from app.services.websocket_manager import manager
 async def create_appointment_notification(
     db: AsyncSession,
     appointment_request,
+    recipient_user_id: int | None = None,
 ):
+    # --------------------------------------------------
+    # Reload appointment request with relationships
+    # explicitly loaded.
+    # This avoids MissingGreenlet with AsyncSession.
+    # --------------------------------------------------
+
+    result = await db.execute(
+        select(AppointmentRequest)
+        .where(
+            AppointmentRequest.id == appointment_request.id
+        )
+        .options(
+            selectinload(
+                AppointmentRequest.patient
+            ),
+            selectinload(
+                AppointmentRequest.doctor
+            ),
+            selectinload(
+                AppointmentRequest.hospital
+            ),
+        )
+    )
+
+    appointment_request = result.scalar_one()
+
+    # --------------------------------------------------
+    # Get names safely
+    # --------------------------------------------------
+
+    patient_name = (
+        appointment_request.patient.name
+        if appointment_request.patient
+        else f"Patient #{appointment_request.patient_id}"
+    )
+
+    doctor_name = (
+        appointment_request.doctor.name
+        if appointment_request.doctor
+        else f"Doctor #{appointment_request.doctor_id}"
+    )
+
+    requested_at = (
+        appointment_request.requested_start_at
+    )
+
+    formatted_date = requested_at.strftime(
+        "%B %d, %Y"
+    )
+
+    formatted_time = requested_at.strftime(
+        "%I:%M %p"
+    )
+
+    visit_reason = (
+        appointment_request.visit_reason
+        or "Not provided"
+    )
+
+    # --------------------------------------------------
+    # Notification content
+    # --------------------------------------------------
+
+    title = "New Appointment Request"
+
+    message = (
+        f"{patient_name} requested an appointment "
+        f"with {doctor_name} on "
+        f"{formatted_date} at "
+        f"{formatted_time}. "
+        f"Reason: {visit_reason}."
+    )
+
+    # --------------------------------------------------
+    # Persistent notification
+    # --------------------------------------------------
+
     notification = Notification(
-        recipient_user_id=None,
+        recipient_user_id=recipient_user_id,
         hospital_id=appointment_request.hospital_id,
         appointment_request_id=appointment_request.id,
-        type="appointment_request",
-        title="New Appointment Request",
-        message=(
-            "New appointment request received."
-        ),
+        type="appointment_request_created",
+        title=title,
+        message=message,
         is_read=False,
     )
 
@@ -26,13 +105,43 @@ async def create_appointment_notification(
     await db.refresh(notification)
 
     print(
+        "======================================"
+    )
+    print(
         "NOTIFICATION CREATED:",
         notification.id,
     )
+    print(
+        "RECIPIENT USER ID:",
+        notification.recipient_user_id,
+    )
+    print(
+        "HOSPITAL ID:",
+        notification.hospital_id,
+    )
+    print(
+        "APPOINTMENT REQUEST ID:",
+        notification.appointment_request_id,
+    )
+    print(
+        "TYPE:",
+        notification.type,
+    )
+    print(
+        "TITLE:",
+        notification.title,
+    )
+    print(
+        "MESSAGE:",
+        notification.message,
+    )
+    print(
+        "======================================"
+    )
 
-    # -----------------------------------------
-    # REAL-TIME HOSPITAL NOTIFICATION
-    # -----------------------------------------
+    # --------------------------------------------------
+    # Real-time WebSocket notification
+    # --------------------------------------------------
 
     await manager.send_to_hospital(
         hospital_id=appointment_request.hospital_id,
@@ -49,28 +158,24 @@ async def create_appointment_notification(
                 "patient_id": (
                     appointment_request.patient_id
                 ),
+                "patient_name": patient_name,
                 "doctor_id": (
                     appointment_request.doctor_id
                 ),
+                "doctor_name": doctor_name,
                 "requested_start_at": (
-                    appointment_request
-                    .requested_start_at
-                    .isoformat()
+                    requested_at.isoformat()
                 ),
                 "duration_minutes": (
                     appointment_request.duration_minutes
                 ),
-                "visit_reason": (
-                    appointment_request.visit_reason
-                ),
+                "visit_reason": visit_reason,
                 "patient_message": (
                     appointment_request.patient_message
                 ),
                 "status": appointment_request.status,
-                "created_at": (
-                    appointment_request.created_at
-                    .isoformat()
-                ),
+                "title": title,
+                "message": message,
             },
         },
     )

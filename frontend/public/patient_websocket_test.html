@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Patient WebSocket Test</title>
+</head>
+
+<body>
+
+    <h2>Patient WebSocket Test</h2>
+
+    <button onclick="connectWebSocket()">
+        Connect
+    </button>
+
+    <pre id="output"></pre>
+
+    <script>
+
+        let socket;
+
+        function log(message) {
+            document.getElementById("output").textContent +=
+                message + "\n";
+        }
+
+        function connectWebSocket() {
+
+            socket = new WebSocket(
+                "ws://127.0.0.1:8000/ai/patient/ws/1"
+            );
+
+            socket.onopen = function () {
+                log("PATIENT CONNECTED");
+            };
+
+            socket.onmessage = function (event) {
+
+                log(
+                    "SERVER: " +
+                    event.data
+                );
+
+            };
+
+            socket.onclose = function () {
+                log("PATIENT DISCONNECTED");
+            };
+
+            socket.onerror = function (error) {
+                log("PATIENT ERROR");
+                console.error(error);
+            };
+        }
+
+    </script>
+
+</body>
+
+</html>

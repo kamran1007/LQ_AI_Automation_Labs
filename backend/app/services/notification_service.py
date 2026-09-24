@@ -7,16 +7,32 @@ from app.models.notification import Notification
 from app.services.websocket_manager import manager
 
 
+# ============================================================
+# HOSPITAL SIDE
+# Create notification when patient creates appointment request
+#
+# Flow:
+#
+# Patient books appointment
+#       ↓
+# AppointmentRequest
+#       ↓
+# Notification DB
+#       ↓
+# Hospital WebSocket
+# ============================================================
+
 async def create_appointment_notification(
     db: AsyncSession,
     appointment_request,
     recipient_user_id: int | None = None,
 ):
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Reload appointment request with relationships
     # explicitly loaded.
+    #
     # This avoids MissingGreenlet with AsyncSession.
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
     result = await db.execute(
         select(AppointmentRequest)
@@ -38,9 +54,9 @@ async def create_appointment_notification(
 
     appointment_request = result.scalar_one()
 
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Get names safely
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
     patient_name = (
         appointment_request.patient.name
@@ -71,9 +87,9 @@ async def create_appointment_notification(
         or "Not provided"
     )
 
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Notification content
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
     title = "New Appointment Request"
 
@@ -85,9 +101,9 @@ async def create_appointment_notification(
         f"Reason: {visit_reason}."
     )
 
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Persistent notification
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
     notification = Notification(
         recipient_user_id=recipient_user_id,
@@ -104,44 +120,56 @@ async def create_appointment_notification(
     await db.commit()
     await db.refresh(notification)
 
-    print(
-        "======================================"
-    )
-    print(
-        "NOTIFICATION CREATED:",
-        notification.id,
-    )
-    print(
-        "RECIPIENT USER ID:",
-        notification.recipient_user_id,
-    )
-    print(
-        "HOSPITAL ID:",
-        notification.hospital_id,
-    )
-    print(
-        "APPOINTMENT REQUEST ID:",
-        notification.appointment_request_id,
-    )
-    print(
-        "TYPE:",
-        notification.type,
-    )
-    print(
-        "TITLE:",
-        notification.title,
-    )
-    print(
-        "MESSAGE:",
-        notification.message,
-    )
+    # --------------------------------------------------------
+    # Debug information
+    # --------------------------------------------------------
+
     print(
         "======================================"
     )
 
-    # --------------------------------------------------
-    # Real-time WebSocket notification
-    # --------------------------------------------------
+    print(
+        "NOTIFICATION CREATED:",
+        notification.id,
+    )
+
+    print(
+        "RECIPIENT USER ID:",
+        notification.recipient_user_id,
+    )
+
+    print(
+        "HOSPITAL ID:",
+        notification.hospital_id,
+    )
+
+    print(
+        "APPOINTMENT REQUEST ID:",
+        notification.appointment_request_id,
+    )
+
+    print(
+        "TYPE:",
+        notification.type,
+    )
+
+    print(
+        "TITLE:",
+        notification.title,
+    )
+
+    print(
+        "MESSAGE:",
+        notification.message,
+    )
+
+    print(
+        "======================================"
+    )
+
+    # --------------------------------------------------------
+    # Real-time Hospital WebSocket notification
+    # --------------------------------------------------------
 
     await manager.send_to_hospital(
         hospital_id=appointment_request.hospital_id,
@@ -181,8 +209,270 @@ async def create_appointment_notification(
     )
 
     print(
-        "WEBSOCKET NOTIFICATION SENT:",
+        "HOSPITAL WEBSOCKET NOTIFICATION SENT:",
         appointment_request.hospital_id,
+    )
+
+    return notification
+
+
+# ============================================================
+# PATIENT SIDE
+# Create notification + send real-time WebSocket event
+#
+# Used for:
+#
+# - appointment_accepted
+# - appointment_declined
+# - appointment_proposal_accepted
+# - appointment_proposal_rejected
+#
+# ============================================================
+
+async def create_patient_appointment_notification(
+    db: AsyncSession,
+    appointment_request: AppointmentRequest,
+    event_type: str,
+    title: str,
+    message: str,
+):
+    # --------------------------------------------------------
+    # Create persistent notification
+    # --------------------------------------------------------
+
+    notification = Notification(
+        recipient_user_id=appointment_request.patient_id,
+        hospital_id=appointment_request.hospital_id,
+        appointment_request_id=appointment_request.id,
+        type=event_type,
+        title=title,
+        message=message,
+        is_read=False,
+    )
+
+    db.add(notification)
+
+    await db.commit()
+    await db.refresh(notification)
+
+    # --------------------------------------------------------
+    # Debug
+    # --------------------------------------------------------
+
+    print(
+        "======================================"
+    )
+
+    print(
+        "PATIENT NOTIFICATION CREATED:",
+        notification.id,
+    )
+
+    print(
+        "RECIPIENT PATIENT ID:",
+        notification.recipient_user_id,
+    )
+
+    print(
+        "HOSPITAL ID:",
+        notification.hospital_id,
+    )
+
+    print(
+        "APPOINTMENT REQUEST ID:",
+        notification.appointment_request_id,
+    )
+
+    print(
+        "TYPE:",
+        notification.type,
+    )
+
+    print(
+        "TITLE:",
+        notification.title,
+    )
+
+    print(
+        "MESSAGE:",
+        notification.message,
+    )
+
+    print(
+        "======================================"
+    )
+
+    # --------------------------------------------------------
+    # Real-time Patient WebSocket
+    # --------------------------------------------------------
+
+    await manager.send_to_patient(
+        patient_id=appointment_request.patient_id,
+        message={
+            "event": event_type,
+            "data": {
+                "notification_id": notification.id,
+                "appointment_request_id": (
+                    appointment_request.id
+                ),
+                "patient_id": (
+                    appointment_request.patient_id
+                ),
+                "hospital_id": (
+                    appointment_request.hospital_id
+                ),
+                "doctor_id": (
+                    appointment_request.doctor_id
+                ),
+                "status": appointment_request.status,
+                "title": title,
+                "message": message,
+            },
+        },
+    )
+
+    print(
+        "PATIENT WEBSOCKET NOTIFICATION SENT:",
+        appointment_request.patient_id,
+    )
+
+    return notification
+
+
+# ============================================================
+# PATIENT SIDE - PROPOSED TIME
+#
+# Hospital proposes a different appointment time.
+#
+# This sends:
+#
+# 1. Persistent notification
+# 2. Real-time WebSocket event
+# 3. proposed_start_at as structured data
+#
+# ============================================================
+
+async def create_patient_proposal_notification(
+    db: AsyncSession,
+    appointment_request: AppointmentRequest,
+    title: str,
+    message: str,
+):
+    # --------------------------------------------------------
+    # Make sure a proposed time actually exists
+    # --------------------------------------------------------
+
+    proposed_start_at = (
+        appointment_request.proposed_start_at
+    )
+
+    if proposed_start_at is None:
+        raise ValueError(
+            "Cannot create proposal notification: "
+            "proposed_start_at is missing."
+        )
+
+    # --------------------------------------------------------
+    # Persistent notification
+    # --------------------------------------------------------
+
+    notification = Notification(
+        recipient_user_id=appointment_request.patient_id,
+        hospital_id=appointment_request.hospital_id,
+        appointment_request_id=appointment_request.id,
+        type="appointment_time_proposed",
+        title=title,
+        message=message,
+        is_read=False,
+    )
+
+    db.add(notification)
+
+    await db.commit()
+    await db.refresh(notification)
+
+    # --------------------------------------------------------
+    # Debug
+    # --------------------------------------------------------
+
+    print(
+        "======================================"
+    )
+
+    print(
+        "PATIENT PROPOSAL NOTIFICATION CREATED:",
+        notification.id,
+    )
+
+    print(
+        "RECIPIENT PATIENT ID:",
+        notification.recipient_user_id,
+    )
+
+    print(
+        "APPOINTMENT REQUEST ID:",
+        notification.appointment_request_id,
+    )
+
+    print(
+        "PROPOSED START AT:",
+        proposed_start_at,
+    )
+
+    print(
+        "TYPE:",
+        notification.type,
+    )
+
+    print(
+        "TITLE:",
+        notification.title,
+    )
+
+    print(
+        "MESSAGE:",
+        notification.message,
+    )
+
+    print(
+        "======================================"
+    )
+
+    # --------------------------------------------------------
+    # Real-time Patient WebSocket
+    # --------------------------------------------------------
+
+    await manager.send_to_patient(
+        patient_id=appointment_request.patient_id,
+        message={
+            "event": "appointment_time_proposed",
+            "data": {
+                "notification_id": notification.id,
+                "appointment_request_id": (
+                    appointment_request.id
+                ),
+                "patient_id": (
+                    appointment_request.patient_id
+                ),
+                "hospital_id": (
+                    appointment_request.hospital_id
+                ),
+                "doctor_id": (
+                    appointment_request.doctor_id
+                ),
+                "status": appointment_request.status,
+                "proposed_start_at": (
+                    proposed_start_at.isoformat()
+                ),
+                "title": title,
+                "message": message,
+            },
+        },
+    )
+
+    print(
+        "PATIENT PROPOSAL WEBSOCKET SENT:",
+        appointment_request.patient_id,
     )
 
     return notification

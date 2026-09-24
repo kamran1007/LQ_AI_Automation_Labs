@@ -117,4 +117,21 @@ class AppointmentRequest(Base):
     notifications: Mapped[list["Notification"]] = relationship(
     "Notification",
     back_populates="appointment_request",
-)
+    )
+
+    # this is proposal model
+    proposed_start_at: Mapped[datetime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
+    )
+
+    proposal_message: Mapped[str | None] = mapped_column(
+    Text,
+    nullable=True,
+    )
+
+    decline_reason: Mapped[str | None] = mapped_column(
+    Text,
+    nullable=True,
+    )
+

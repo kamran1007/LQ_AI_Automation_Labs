@@ -107,10 +107,15 @@ async def chat(
         booking_state=booking_state,
     )
 
-    print("\n======================================")
-    print("AI RESPONSE AFTER BACKEND ROUTING")
-    print(ai_response)
-    print("======================================\n")
+    print("\n" + "=" * 80)
+    print("CHAT DEBUG")
+    print("USER ID:", request.user_id)
+    print("USER MESSAGE:", request.message)
+    print("ACTIVE BOOKING STATE BEFORE AI:")
+    print(booking_state)
+    print("CONVERSATION HISTORY:")
+    print(history)
+    print("=" * 80)
 
     # =====================================================
     # 5. GET UPDATED BOOKING STATE
@@ -120,10 +125,10 @@ async def chat(
         "booking_state"
     )
 
-    print("\n======================================")
-    print("UPDATED BOOKING STATE")
+    print("\n" + "=" * 80)
+    print("BOOKING STATE FROM AI:")
     print(booking_state)
-    print("======================================\n")
+    print("=" * 80)
 
     # =====================================================
     # 6. FINAL APPOINTMENT REQUEST

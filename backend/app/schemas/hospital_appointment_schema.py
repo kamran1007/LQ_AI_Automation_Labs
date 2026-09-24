@@ -93,3 +93,16 @@ class HospitalAppointmentRequestActionResponse(BaseModel):
     success: bool
     message: str
     data: HospitalAppointmentRequestResponse
+
+
+class AppointmentAcceptRequest(BaseModel):
+    message: str | None = None
+
+
+class AppointmentDeclineRequest(BaseModel):
+    reason: str
+
+
+class AppointmentProposeRequest(BaseModel):
+    proposed_start_at: datetime
+    message: str | None = None

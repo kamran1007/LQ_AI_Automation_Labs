@@ -7,6 +7,12 @@ from app.api.auth import router as auth_router
 from app.api.appointment_request import router as appointment_request_router
 from app.api.hospital_appointments import router as hospital_appointments_router
 from app.api.hospital_websocket import router as hospital_websocket_router
+from app.api.patient_websocket import (
+    router as patient_websocket_router,
+)
+from app.api.patient_appointments import (
+    router as patient_appointments_router,
+)
 
 
 
@@ -52,6 +58,14 @@ app.include_router(
 
 app.include_router(
     hospital_websocket_router,
+    prefix="/ai",
+)
+app.include_router(
+    patient_websocket_router,
+    prefix="/ai",
+)
+app.include_router(
+    patient_appointments_router,
     prefix="/ai",
 )
 

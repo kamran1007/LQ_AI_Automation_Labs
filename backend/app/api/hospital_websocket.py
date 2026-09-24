@@ -1,8 +1,4 @@
-from fastapi import (
-    APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
-)
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.services.websocket_manager import manager
 
@@ -19,35 +15,30 @@ async def hospital_websocket(
     hospital_id: int,
 ):
     print(
-        f"WEBSOCKET HANDSHAKE: "
-        f"hospital_id={hospital_id}"
+        f"WEBSOCKET HANDSHAKE: hospital_id={hospital_id}"
     )
 
-    await manager.connect(
+    await manager.connect_hospital(
         hospital_id=hospital_id,
         websocket=websocket,
     )
 
     print(
-        f"WEBSOCKET CONNECTED: "
-        f"hospital_id={hospital_id}"
+        f"WEBSOCKET CONNECTED: hospital_id={hospital_id}"
     )
 
     try:
-
         while True:
-
             data = await websocket.receive_text()
 
             print(
                 f"WEBSOCKET MESSAGE "
-                f"hospital_id={hospital_id}: "
-                f"{data}"
+                f"hospital_id={hospital_id}: {data}"
             )
 
     except WebSocketDisconnect:
 
-        manager.disconnect(
+        manager.disconnect_hospital(
             hospital_id=hospital_id,
             websocket=websocket,
         )

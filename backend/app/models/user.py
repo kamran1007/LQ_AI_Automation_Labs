@@ -85,3 +85,9 @@ class User(Base):
         foreign_keys="Notification.recipient_user_id",
         back_populates="recipient",
     )
+
+    auth_sessions = relationship(
+    "AuthSession",
+    back_populates="user",
+    cascade="all, delete-orphan",
+    )

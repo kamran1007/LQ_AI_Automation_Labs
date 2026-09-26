@@ -164,3 +164,24 @@ async def get_active_appointment_conversation(
         )
 
     return conversation
+
+async def get_user_conversations(
+    db: AsyncSession,
+    user_id: int,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Conversation]:
+
+    result = await db.execute(
+        select(Conversation)
+        .where(
+            Conversation.user_id == user_id
+        )
+        .order_by(
+            Conversation.created_at.asc()
+        )
+        .offset(offset)
+        .limit(limit)
+    )
+
+    return list(result.scalars().all())

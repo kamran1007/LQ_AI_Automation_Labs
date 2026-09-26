@@ -7,6 +7,8 @@ from app.schemas.user_schema import (
     UserResponse
 )
 from app.services.user_service import create_user
+from app.core.auth_dependency import get_current_auth_session
+from app.models.auth_session import AuthSession
 
 
 router = APIRouter(
@@ -38,3 +40,18 @@ async def create_user_endpoint(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e)
         )
+
+
+@router.get(
+    "/me"
+)
+async def get_current_user(
+    auth_session: AuthSession = Depends(
+        get_current_auth_session
+    ),
+):
+    return {
+        "success": True,
+        "user_id": auth_session.user_id,
+        "session_id": auth_session.session_id,
+    }

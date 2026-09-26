@@ -14,6 +14,7 @@ from app.api.patient_appointments import (
     router as patient_appointments_router,
 )
 
+from app.api.conversation import router as conversation_router
 
 
 app = FastAPI(
@@ -66,6 +67,10 @@ app.include_router(
 )
 app.include_router(
     patient_appointments_router,
+    prefix="/ai",
+)
+app.include_router(
+    conversation_router,
     prefix="/ai",
 )
 

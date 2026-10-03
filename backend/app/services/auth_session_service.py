@@ -300,3 +300,18 @@ async def rotate_auth_session(
         "session_id": new_session_id,
         "expires_at": new_expires_at,
     }
+
+
+async def revoke_auth_session(
+    db: AsyncSession,
+    auth_session: AuthSession,
+    reason: str = "logout",
+):
+    auth_session.is_revoked = True
+    auth_session.revoked_at = datetime.now(timezone.utc)
+    auth_session.revoked_reason = reason
+
+    await db.commit()
+    await db.refresh(auth_session)
+
+    return auth_session

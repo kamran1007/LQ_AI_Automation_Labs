@@ -8,12 +8,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.db.base import Base
+
 if TYPE_CHECKING:
     from app.models.role import Role
     from app.models.user import User
-
-
-from app.db.base import Base
+    from app.models.hospital import Hospital
 
 
 def utc_now() -> datetime:
@@ -40,6 +40,12 @@ class UserRole(Base):
         index=True
     )
 
+    hospital_id: Mapped[int | None] = mapped_column(
+        ForeignKey("hospitals.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utc_now,
@@ -56,10 +62,15 @@ class UserRole(Base):
         back_populates="users"
     )
 
+    hospital: Mapped["Hospital | None"] = relationship(
+        "Hospital"
+    )
+
     __table_args__ = (
         UniqueConstraint(
             "user_id",
             "role_id",
-            name="uq_user_roles_user_id_role_id"
+            "hospital_id",
+            name="uq_user_roles_user_role_hospital"
         ),
     )

@@ -19,22 +19,31 @@ from app.services.hospital_appointment_service import (
     propose_hospital_appointment_time,
 )
 
+from app.api.hospital import get_current_hospital_context
+
+
 router = APIRouter(
     prefix="/hospital",
     tags=["Hospital"],
 )
 
 
+# =========================================================
+# GET APPOINTMENT REQUESTS
+# =========================================================
+
 @router.get(
     "/appointment-requests",
     response_model=HospitalAppointmentRequestListResponse,
 )
 async def get_appointment_requests(
-    hospital_id: int = Query(...),
     doctor_id: int | None = Query(None),
     status: str = Query("pending"),
     db: AsyncSession = Depends(get_db),
+    context=Depends(get_current_hospital_context),
 ):
+    hospital_id = context["hospital_id"]
+
     appointment_requests = await get_hospital_appointment_requests(
         db=db,
         hospital_id=hospital_id,
@@ -47,15 +56,22 @@ async def get_appointment_requests(
         "data": appointment_requests,
     }
 
+
+# =========================================================
+# GET SINGLE APPOINTMENT REQUEST
+# =========================================================
+
 @router.get(
     "/appointment-requests/{appointment_request_id}",
     response_model=HospitalAppointmentRequestDetailApiResponse,
 )
 async def get_appointment_request(
     appointment_request_id: int,
-    hospital_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
+    context=Depends(get_current_hospital_context),
 ):
+    hospital_id = context["hospital_id"]
+
     appointment_request = await get_hospital_appointment_request(
         db=db,
         appointment_request_id=appointment_request_id,
@@ -73,15 +89,22 @@ async def get_appointment_request(
         "data": appointment_request,
     }
 
+
+# =========================================================
+# ACCEPT APPOINTMENT
+# =========================================================
+
 @router.post(
     "/appointment-requests/{appointment_request_id}/accept",
     response_model=HospitalAppointmentRequestActionResponse,
 )
 async def accept_appointment_request(
     appointment_request_id: int,
-    hospital_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
+    context=Depends(get_current_hospital_context),
 ):
+    hospital_id = context["hospital_id"]
+
     appointment_request = await accept_hospital_appointment_request(
         db=db,
         appointment_request_id=appointment_request_id,
@@ -100,50 +123,28 @@ async def accept_appointment_request(
         "data": appointment_request,
     }
 
-@router.post(
-    "/appointment-requests/{appointment_request_id}/accept"
-)
-async def accept_appointment(
-    appointment_request_id: int,
-    hospital_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    appointment_request = (
-        await accept_hospital_appointment_request(
-            db=db,
-            appointment_request_id=appointment_request_id,
-            hospital_id=hospital_id,
-        )
-    )
 
-    if appointment_request is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Appointment request not found.",
-        )
-
-    return {
-        "success": True,
-        "message": "Appointment request accepted.",
-        "data": appointment_request,
-    }
+# =========================================================
+# DECLINE APPOINTMENT
+# =========================================================
 
 @router.post(
-    "/appointment-requests/{appointment_request_id}/decline"
+    "/appointment-requests/{appointment_request_id}/decline",
+    response_model=HospitalAppointmentRequestActionResponse,
 )
 async def decline_appointment(
     appointment_request_id: int,
     request: AppointmentDeclineRequest,
-    hospital_id: int,
     db: AsyncSession = Depends(get_db),
+    context=Depends(get_current_hospital_context),
 ):
-    appointment_request = (
-        await decline_hospital_appointment_request(
-            db=db,
-            appointment_request_id=appointment_request_id,
-            hospital_id=hospital_id,
-            reason=request.reason,
-        )
+    hospital_id = context["hospital_id"]
+
+    appointment_request = await decline_hospital_appointment_request(
+        db=db,
+        appointment_request_id=appointment_request_id,
+        hospital_id=hospital_id,
+        reason=request.reason,
     )
 
     if appointment_request is None:
@@ -158,23 +159,29 @@ async def decline_appointment(
         "data": appointment_request,
     }
 
+
+# =========================================================
+# PROPOSE NEW TIME
+# =========================================================
+
 @router.post(
-    "/appointment-requests/{appointment_request_id}/propose"
+    "/appointment-requests/{appointment_request_id}/propose",
+    response_model=HospitalAppointmentRequestActionResponse,
 )
 async def propose_appointment(
     appointment_request_id: int,
     request: AppointmentProposeRequest,
-    hospital_id: int,
     db: AsyncSession = Depends(get_db),
+    context=Depends(get_current_hospital_context),
 ):
-    appointment_request = (
-        await propose_hospital_appointment_time(
-            db=db,
-            appointment_request_id=appointment_request_id,
-            hospital_id=hospital_id,
-            proposed_start_at=request.proposed_start_at,
-            message=request.message,
-        )
+    hospital_id = context["hospital_id"]
+
+    appointment_request = await propose_hospital_appointment_time(
+        db=db,
+        appointment_request_id=appointment_request_id,
+        hospital_id=hospital_id,
+        proposed_start_at=request.proposed_start_at,
+        message=request.message,
     )
 
     if appointment_request is None:
@@ -185,8 +192,6 @@ async def propose_appointment(
 
     return {
         "success": True,
-        "message": (
-            "Alternative appointment time proposed."
-        ),
+        "message": "Alternative appointment time proposed.",
         "data": appointment_request,
     }

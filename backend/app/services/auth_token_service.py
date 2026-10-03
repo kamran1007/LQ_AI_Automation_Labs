@@ -31,6 +31,8 @@ def utc_now() -> datetime:
 def create_access_token(
     user_id: int,
     session_id: str,
+    role_id: int | None = None, 
+    hospital_id: int | None = None,
 ) -> str:
     """
     Create a short-lived JWT access token.
@@ -57,6 +59,12 @@ def create_access_token(
         "iat": now,
         "exp": expires_at,
     }
+    # Hospital-scoped authentication context 
+    if role_id is not None: 
+        payload["role_id"] = role_id
+        
+    if hospital_id is not None: 
+        payload["hospital_id"] = hospital_id
 
     return jwt.encode(
         payload,

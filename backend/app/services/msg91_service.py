@@ -1,5 +1,4 @@
 import os
-
 import httpx
 
 
@@ -29,9 +28,7 @@ async def verify_msg91_access_token(
         "access-token": access_token,
     }
 
-    async with httpx.AsyncClient(
-        timeout=15.0
-    ) as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
 
         response = await client.post(
             MSG91_VERIFY_ACCESS_TOKEN_URL,
@@ -41,11 +38,16 @@ async def verify_msg91_access_token(
 
     try:
         data = response.json()
-
     except ValueError as exc:
         raise ValueError(
             "MSG91 returned an invalid JSON response"
         ) from exc
+
+    # DEBUG — do not print the token or auth key
+    print("========== MSG91 VERIFY DEBUG ==========")
+    print("HTTP STATUS:", response.status_code)
+    print("RESPONSE:", data)
+    print("========================================")
 
     if response.status_code >= 400:
         raise ValueError(

@@ -25,8 +25,13 @@ from app.services.auth_token_service import (
 from app.services.hospital_auth_service import (
     get_user_hospital_context,
 )
+
 from app.api.hospital import get_current_hospital_context
+
 from app.services.auth_session_service import revoke_auth_session
+
+from app.utils.mobile import normalize_indian_mobile
+
 
 router = APIRouter()
 
@@ -41,11 +46,26 @@ async def verify_hospital_otp(
 ):
 
     # --------------------------------------------------
-    # 1. Verify OTP
+    # 1. Normalize Indian mobile number
+    # --------------------------------------------------
+
+    try:
+        normalized_mobile = normalize_indian_mobile(
+            request.mobile
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+    # --------------------------------------------------
+    # 2. Verify OTP
     # --------------------------------------------------
 
     otp_valid = await verify_otp(
-        mobile=request.mobile,
+        mobile=normalized_mobile,
         otp=request.otp,
     )
 
@@ -56,12 +76,12 @@ async def verify_hospital_otp(
         )
 
     # --------------------------------------------------
-    # 2. Find user by mobile
+    # 3. Find user by normalized mobile
     # --------------------------------------------------
 
     result = await db.execute(
         select(User).where(
-            User.mobile == request.mobile
+            User.mobile == normalized_mobile
         )
     )
 
@@ -74,7 +94,7 @@ async def verify_hospital_otp(
         )
 
     # --------------------------------------------------
-    # 3. Validate user
+    # 4. Validate user
     # --------------------------------------------------
 
     if not user.is_active:
@@ -90,7 +110,7 @@ async def verify_hospital_otp(
         )
 
     # --------------------------------------------------
-    # 4. Resolve hospital + role from DB
+    # 5. Resolve hospital + role from DB
     # --------------------------------------------------
 
     hospital_context = await get_user_hospital_context(
@@ -103,7 +123,7 @@ async def verify_hospital_otp(
     hospital_id = hospital_context["hospital_id"]
 
     # --------------------------------------------------
-    # 5. Verify hospital
+    # 6. Verify hospital
     # --------------------------------------------------
 
     result = await db.execute(
@@ -122,7 +142,7 @@ async def verify_hospital_otp(
         )
 
     # --------------------------------------------------
-    # 6. Create authentication session
+    # 7. Create authentication session
     # --------------------------------------------------
 
     auth_session = await create_auth_session(
@@ -132,7 +152,7 @@ async def verify_hospital_otp(
     )
 
     # --------------------------------------------------
-    # 7. Create hospital-scoped access token
+    # 8. Create hospital-scoped access token
     # --------------------------------------------------
 
     access_token = create_access_token(
@@ -143,7 +163,7 @@ async def verify_hospital_otp(
     )
 
     # --------------------------------------------------
-    # 8. Return tokens
+    # 9. Return tokens
     # --------------------------------------------------
 
     return {
@@ -156,9 +176,13 @@ async def verify_hospital_otp(
         "token_type": "bearer",
 
         "user_id": user.id,
+        "user_name": user.name,
+
         "role_id": role_id,
         "role_name": role_name,
+
         "hospital_id": hospital_id,
+        "hospital_name": hospital.name,
 
         "session_id": auth_session["session_id"],
 
@@ -166,6 +190,7 @@ async def verify_hospital_otp(
             auth_session["expires_at"].isoformat()
         ),
     }
+
 
 @router.post("/logout")
 async def hospital_logout(

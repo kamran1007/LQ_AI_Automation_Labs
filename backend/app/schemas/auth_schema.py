@@ -44,10 +44,22 @@ class VerifyOTPResponse(BaseModel):
     session_id: str | None = None
 
 class VerifyMSG91TokenRequest(BaseModel):
-    access_token: str = Field(
+    access_token: str = Field(min_length=1)
+    name: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=100,
+    )
+
+class RegisterUserRequest(BaseModel):
+    registration_token: str = Field(
         min_length=1
     )
 
+    name: str = Field(
+        min_length=2,
+        max_length=100,
+    )
 class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(
         min_length=1

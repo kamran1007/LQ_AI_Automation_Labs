@@ -13,11 +13,16 @@ class HospitalAuthResponse(BaseModel):
 
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
+    token_type: str
 
     user_id: int
+    user_name: str
+
     role_id: int
+    role_name: str
+
     hospital_id: int
+    hospital_name: str
+
     session_id: str
     expires_at: str
-

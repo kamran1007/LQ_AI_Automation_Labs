@@ -34,7 +34,6 @@ export function initializeMsg91() {
     tokenAuth,
     exposeMethods: true,
 
-    // MSG91 requires these callbacks
     success: (data: Msg91CallbackData) => {
       console.log(
         "MSG91 verification event:",
@@ -50,7 +49,6 @@ export function initializeMsg91() {
     },
   });
 }
-
 
 export function getMsg91ErrorMessage(
   error: unknown,

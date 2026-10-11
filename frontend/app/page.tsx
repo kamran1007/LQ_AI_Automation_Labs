@@ -1,691 +1,10 @@
-// "use client";
-
-// import { useEffect, useRef, useState } from "react";
-
-// declare global {
-//   interface Window {
-//     initSendOTP?: (configuration: {
-//       widgetId: string;
-//       tokenAuth: string;
-//       identifier?: string;
-//       exposeMethods?: boolean;
-//       captchaRenderId?: string;
-//       success?: (data: unknown) => void;
-//       failure?: (error: unknown) => void;
-//     }) => void;
-
-//     sendOtp?: (
-//       identifier: string,
-//       success?: (data: unknown) => void,
-//       failure?: (error: unknown) => void
-//     ) => void;
-
-//     verifyOtp?: (
-//       otp: string | number,
-//       success?: (data: unknown) => void,
-//       failure?: (error: unknown) => void,
-//       reqId?: string
-//     ) => void;
-
-//     retryOtp?: (
-//       channel: string | null,
-//       success?: (data: unknown) => void,
-//       failure?: (error: unknown) => void,
-//       reqId?: string
-//     ) => void;
-
-//     isCaptchaVerified?: () => boolean;
-
-//     getWidgetData?: () => unknown;
-//   }
-// }
-
-// type Msg91SendResponse = {
-//   reqId?: string;
-//   reqid?: string;
-//   requestId?: string;
-// };
-
-// type Msg91VerifyResponse = {
-//   access_token?: string;
-//   accessToken?: string;
-//   token?: string;
-//   [key: string]: unknown;
-// };
-
-// export default function Home() {
-//   const [mobile, setMobile] = useState("");
-//   const [otp, setOtp] = useState("");
-
-//   const [otpSent, setOtpSent] = useState(false);
-//   const [loading, setLoading] = useState(false);
-
-//   const [message, setMessage] = useState("");
-//   const [reqId, setReqId] = useState("");
-
-//   const initialized = useRef(false);
-
-//  useEffect(() => {
-//   if (initialized.current) {
-//     return;
-//   }
-
-//   initialized.current = true;
-
-//   const widgetId =
-//     process.env.NEXT_PUBLIC_MSG91_WIDGET_ID;
-
-//   const tokenAuth =
-//     process.env.NEXT_PUBLIC_MSG91_AUTH_TOKEN;
-
-//   if (!widgetId || !tokenAuth) {
-//     console.error(
-//       "MSG91 configuration is missing.",
-//       {
-//         widgetIdPresent: Boolean(widgetId),
-//         tokenAuthPresent: Boolean(tokenAuth),
-//       }
-//     );
-
-//     return;
-//   }
-
-//   const configuration = {
-//     widgetId,
-//     tokenAuth,
-//     exposeMethods: true,
-//     captchaRenderId: "msg91-captcha",
-
-//     success: (data: unknown) => {
-//       console.log(
-//         "MSG91 global success:",
-//         data
-//       );
-//     },
-
-//     failure: (error: unknown) => {
-//       console.error(
-//         "MSG91 global failure:",
-//         error
-//       );
-//     },
-//   };
-
-//   // If MSG91 has already been loaded,
-//   // initialize it directly.
-//   if (
-//     typeof window.initSendOTP ===
-//     "function"
-//   ) {
-//     console.log(
-//       "MSG91 already loaded. Initializing..."
-//     );
-
-//     window.initSendOTP(configuration);
-
-//     return;
-//   }
-
-//   // Prevent duplicate script injection.
-//   const existingScript =
-//     document.querySelector(
-//       'script[src="https://verify.msg91.com/otp-provider.js"]'
-//     );
-
-//   if (existingScript) {
-//     console.log(
-//       "MSG91 script already exists."
-//     );
-
-//     return;
-//   }
-
-//   const script =
-//     document.createElement("script");
-
-//   script.type = "text/javascript";
-
-//   script.src =
-//     "https://verify.msg91.com/otp-provider.js";
-
-//   script.async = true;
-
-//   script.onload = () => {
-//     console.log(
-//       "MSG91 provider loaded."
-//     );
-
-//     if (
-//       typeof window.initSendOTP !==
-//       "function"
-//     ) {
-//       console.error(
-//         "MSG91 loaded but initSendOTP is unavailable."
-//       );
-
-//       return;
-//     }
-
-//     console.log(
-//       "Initializing MSG91..."
-//     );
-
-//     window.initSendOTP(
-//       configuration
-//     );
-
-//     console.log(
-//       "MSG91 initialized."
-//     );
-//   };
-
-//   script.onerror = () => {
-//     console.error(
-//       "Could not load MSG91 provider."
-//     );
-//   };
-
-//   document.head.appendChild(script);
-// }, []);
-
-//   const handleSendOtp = () => {
-//     const cleanedMobile =
-//       mobile.replace(/\D/g, "");
-
-//     if (!cleanedMobile) {
-//       setMessage(
-//         "Please enter your mobile number."
-//       );
-
-//       return;
-//     }
-
-//     /*
-//      * MSG91 requires country code without +.
-//      *
-//      * Example:
-//      * +91 9999999999
-//      *
-//      * becomes:
-//      * 919999999999
-//      */
-//     let identifier = cleanedMobile;
-
-//     if (
-//       identifier.startsWith("0") &&
-//       identifier.length === 10
-//     ) {
-//       identifier =
-//         "91" + identifier.substring(1);
-//     }
-
-//     if (
-//       identifier.length === 10
-//     ) {
-//       identifier =
-//         "91" + identifier;
-//     }
-
-//     console.log(
-//       "Sending OTP to:",
-//       identifier
-//     );
-
-//     if (
-//       typeof window.sendOtp !==
-//       "function"
-//     ) {
-//       console.error(
-//         "window.sendOtp is unavailable."
-//       );
-
-//       setMessage(
-//         "MSG91 is not ready. Please refresh the page."
-//       );
-
-//       return;
-//     }
-
-//     setLoading(true);
-//     setMessage("");
-
-//     window.sendOtp(
-//       identifier,
-
-//       (data) => {
-//         console.log(
-//           "MSG91 OTP SEND SUCCESS:",
-//           data
-//         );
-
-//         const response =
-//           data as Msg91SendResponse;
-
-//         const receivedReqId =
-//           response.reqId ||
-//           response.reqid ||
-//           response.requestId ||
-//           "";
-
-//         if (receivedReqId) {
-//           setReqId(
-//             receivedReqId
-//           );
-//         }
-
-//         setOtpSent(true);
-//         setLoading(false);
-
-//         setMessage(
-//           "OTP sent. Check your WhatsApp."
-//         );
-//       },
-
-//       (error) => {
-//         console.error(
-//           "MSG91 OTP SEND ERROR:",
-//           error
-//         );
-
-//         setLoading(false);
-
-//         setMessage(
-//           "OTP could not be sent. Check the browser console for the MSG91 error."
-//         );
-//       }
-//     );
-//   };
-
-//   const handleVerifyOtp = () => {
-//     if (!otp.trim()) {
-//       setMessage(
-//         "Please enter the OTP."
-//       );
-
-//       return;
-//     }
-
-//     if (
-//       typeof window.verifyOtp !==
-//       "function"
-//     ) {
-//       console.error(
-//         "window.verifyOtp is unavailable."
-//       );
-
-//       setMessage(
-//         "MSG91 verification is not ready."
-//       );
-
-//       return;
-//     }
-
-//     setLoading(true);
-//     setMessage("");
-
-//     console.log(
-//       "Verifying OTP..."
-//     );
-
-//     window.verifyOtp(
-//       otp.trim(),
-
-//       (data) => {
-//         console.log(
-//           "MSG91 OTP VERIFIED:",
-//           data
-//         );
-
-//         const response =
-//           data as Msg91VerifyResponse;
-
-//         /*
-//          * MSG91 returns an access token after
-//          * successful OTP verification.
-//          *
-//          * DO NOT send this token directly to
-//          * the browser UI or store it in localStorage.
-//          *
-//          * Later we will send it securely to
-//          * our FastAPI backend.
-//          */
-//         const accessToken =
-//           response.access_token ||
-//           response.accessToken ||
-//           response.token;
-
-//         if (accessToken) {
-//           console.log(
-//             "MSG91 access token received."
-//           );
-
-//           /*
-//            * Temporary frontend test only.
-//            *
-//            * We will replace this with:
-//            *
-//            * frontend
-//            *    ↓
-//            * FastAPI
-//            *    ↓
-//            * MSG91 verifyAccessToken
-//            *    ↓
-//            * LightningQ JWT
-//            */
-//         }
-
-//         setLoading(false);
-
-//         setMessage(
-//           "WhatsApp OTP verified successfully!"
-//         );
-//       },
-
-//       (error) => {
-//         console.error(
-//           "MSG91 OTP VERIFY ERROR:",
-//           error
-//         );
-
-//         setLoading(false);
-
-//         setMessage(
-//           "Invalid or expired OTP."
-//         );
-//       },
-
-//       reqId || undefined
-//     );
-//   };
-
-//   const handleRetryOtp = () => {
-//     if (
-//       typeof window.retryOtp !==
-//       "function"
-//     ) {
-//       console.error(
-//         "window.retryOtp is unavailable."
-//       );
-
-//       setMessage(
-//         "MSG91 resend is not ready."
-//       );
-
-//       return;
-//     }
-
-//     setLoading(true);
-//     setMessage("");
-
-//     /*
-//      * For a default widget configuration,
-//      * MSG91 documentation allows null.
-//      *
-//      * If we configure WhatsApp specifically
-//      * later, WhatsApp channel is "12".
-//      */
-//     window.retryOtp(
-//       null,
-
-//       (data) => {
-//         console.log(
-//           "MSG91 OTP RESENT:",
-//           data
-//         );
-
-//         setLoading(false);
-
-//         setMessage(
-//           "OTP resent. Check your WhatsApp."
-//         );
-//       },
-
-//       (error) => {
-//         console.error(
-//           "MSG91 OTP RESEND ERROR:",
-//           error
-//         );
-
-//         setLoading(false);
-
-//         setMessage(
-//           "Could not resend OTP."
-//         );
-//       },
-
-//       reqId || undefined
-//     );
-//   };
-
-//   return (
-//     <main
-//       style={{
-//         minHeight: "100vh",
-//         display: "flex",
-//         alignItems: "center",
-//         justifyContent: "center",
-//         padding: "24px",
-//         background: "#f5f5f5",
-//       }}
-//     >
-//       <div
-//         style={{
-//           width: "100%",
-//           maxWidth: "420px",
-//           background: "white",
-//           padding: "32px",
-//           borderRadius: "16px",
-//           boxShadow:
-//             "0 10px 40px rgba(0,0,0,0.08)",
-//         }}
-//       >
-//         <h1
-//           style={{
-//             fontSize: "28px",
-//             fontWeight: 700,
-//             marginBottom: "8px",
-//           }}
-//         >
-//           LightningQ
-//         </h1>
-
-//         <p
-//           style={{
-//             marginBottom: "24px",
-//             color: "#666",
-//           }}
-//         >
-//           Login with WhatsApp OTP
-//         </p>
-
-//         {/* MSG91 CAPTCHA container */}
-//         <div
-//           id="msg91-captcha"
-//           style={{
-//             marginBottom: "16px",
-//           }}
-//         />
-
-//         {!otpSent ? (
-//           <>
-//             <input
-//               type="tel"
-//               inputMode="tel"
-//               autoComplete="tel"
-//               placeholder="919999999999"
-//               value={mobile}
-//               onChange={(event) =>
-//                 setMobile(
-//                   event.target.value
-//                 )
-//               }
-//               disabled={loading}
-//               style={{
-//                 width: "100%",
-//                 padding: "14px",
-//                 fontSize: "16px",
-//                 border:
-//                   "1px solid #ddd",
-//                 borderRadius: "10px",
-//                 marginBottom: "12px",
-//               }}
-//             />
-
-//             <button
-//               type="button"
-//               onClick={
-//                 handleSendOtp
-//               }
-//               disabled={loading}
-//               style={{
-//                 width: "100%",
-//                 padding: "14px",
-//                 fontSize: "16px",
-//                 border: "none",
-//                 borderRadius: "10px",
-//                 cursor: loading
-//                   ? "not-allowed"
-//                   : "pointer",
-//                 background:
-//                   "#111",
-//                 color: "white",
-//               }}
-//             >
-//               {loading
-//                 ? "Sending..."
-//                 : "Send WhatsApp OTP"}
-//             </button>
-//           </>
-//         ) : (
-//           <>
-//             <p
-//               style={{
-//                 marginBottom: "8px",
-//               }}
-//             >
-//               OTP sent to:
-//             </p>
-
-//             <strong
-//               style={{
-//                 display: "block",
-//                 marginBottom: "16px",
-//               }}
-//             >
-//               {mobile}
-//             </strong>
-
-//             <input
-//               type="text"
-//               inputMode="numeric"
-//               autoComplete="one-time-code"
-//               placeholder="Enter OTP"
-//               value={otp}
-//               onChange={(event) =>
-//                 setOtp(
-//                   event.target.value
-//                 )
-//               }
-//               disabled={loading}
-//               style={{
-//                 width: "100%",
-//                 padding: "14px",
-//                 fontSize: "18px",
-//                 border:
-//                   "1px solid #ddd",
-//                 borderRadius: "10px",
-//                 marginBottom: "12px",
-//               }}
-//             />
-
-//             <button
-//               type="button"
-//               onClick={
-//                 handleVerifyOtp
-//               }
-//               disabled={loading}
-//               style={{
-//                 width: "100%",
-//                 padding: "14px",
-//                 fontSize: "16px",
-//                 border: "none",
-//                 borderRadius: "10px",
-//                 cursor: loading
-//                   ? "not-allowed"
-//                   : "pointer",
-//                 background:
-//                   "#111",
-//                 color: "white",
-//                 marginBottom: "10px",
-//               }}
-//             >
-//               {loading
-//                 ? "Verifying..."
-//                 : "Verify OTP"}
-//             </button>
-
-//             <button
-//               type="button"
-//               onClick={
-//                 handleRetryOtp
-//               }
-//               disabled={loading}
-//               style={{
-//                 width: "100%",
-//                 padding: "12px",
-//                 fontSize: "14px",
-//                 border:
-//                   "1px solid #ddd",
-//                 borderRadius: "10px",
-//                 background: "white",
-//                 cursor: loading
-//                   ? "not-allowed"
-//                   : "pointer",
-//               }}
-//             >
-//               Resend OTP
-//             </button>
-//           </>
-//         )}
-
-//         {message && (
-//           <p
-//             style={{
-//               marginTop: "20px",
-//               fontSize: "14px",
-//             }}
-//           >
-//             {message}
-//           </p>
-//         )}
-
-//         {reqId && (
-//           <p
-//             style={{
-//               marginTop: "12px",
-//               fontSize: "12px",
-//               color: "#888",
-//             }}
-//           >
-//             OTP request created successfully.
-//           </p>
-//         )}
-//       </div>
-//     </main>
-//   );
-// }
-
 "use client";
 
 import { useState, useEffect } from "react";
-
+import { verifyMsg91Token, registerUser } from "@/lib/api";
 import { initializeMsg91, getMsg91ErrorMessage } from "@/lib/msg91";
-
-import { verifyMsg91Token } from "@/lib/api";
-
 import { saveAuth } from "@/lib/auth";
-import router from "next/dist/client/router";
-
+import { useRouter } from "next/navigation";
 const suggestions = [
   "Find Dolo 650 near me",
   "Book a doctor appointment",
@@ -729,6 +48,9 @@ const capabilities = [
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const [registrationToken, setRegistrationToken] = useState<string | null>(
+    null,
+  );
   const [showLogin, setShowLogin] = useState(false);
 
   const handlePrompt = (value: string) => {
@@ -742,6 +64,7 @@ export default function Home() {
       return next;
     });
   };
+  const router = useRouter();
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#030712] text-white">
@@ -1210,20 +533,23 @@ function ErrorMessage({ message }: { message: string }) {
 }
 
 function LoginModal({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState<"mobile" | "otp">("mobile");
+  const [step, setStep] = useState<"mobile" | "otp" | "name">("mobile");
 
+  const router = useRouter();
+
+  const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
-
   const [otp, setOtp] = useState("");
 
   const [reqId, setReqId] = useState<string | null>(null);
 
+  const [registrationToken, setRegistrationToken] = useState<string | null>(
+    null,
+  );
+
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
-
   const [message, setMessage] = useState("");
-
   const [sdkReady, setSdkReady] = useState(false);
 
   /*
@@ -1283,34 +609,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
     if (cleanedMobile.length !== 10) {
       setError("Please enter a valid 10-digit mobile number.");
-
       return;
     }
 
     if (!sdkReady || !window.sendOtp) {
       setError("OTP service is not ready. Please try again.");
-
       return;
     }
 
     setLoading(true);
 
-    /*
-     * MSG91 expects country code
-     * without the + sign.
-     *
-     * Example:
-     *
-     * 918421205672
-     */
     const identifier = `91${cleanedMobile}`;
 
     window.sendOtp(
       identifier,
-
-      /*
-       * SUCCESS
-       */
       (data: Msg91CallbackData) => {
         console.log("MSG91 send OTP success:", data);
 
@@ -1319,8 +631,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           data.request_id ??
           data.requestId ??
           (typeof data.message === "string" ? data.message : undefined);
-
-        console.log("MSG91 request ID:", requestId);
 
         if (!requestId) {
           setError("OTP request ID was not returned.");
@@ -1333,10 +643,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         setMessage("OTP sent successfully.");
         setLoading(false);
       },
-
-      /*
-       * FAILURE
-       */
       (error: unknown) => {
         console.error("MSG91 send OTP failed:", error);
 
@@ -1348,7 +654,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
       },
     );
   };
-
   /*
    * VERIFY OTP
    */
@@ -1395,7 +700,46 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
           const authResponse = await verifyMsg91Token(msg91AccessToken);
 
-          console.log("LightningQ authentication successful.");
+          console.log("LightningQ authentication response:", authResponse);
+
+          // -----------------------------------------
+          // NEW USER
+          // -----------------------------------------
+          if (authResponse.requires_name) {
+            console.log("New user detected. Asking for name.");
+
+            if (!authResponse.registration_token) {
+              throw new Error(
+                "Verification succeeded, but registration session was not created.",
+              );
+            }
+
+            setRegistrationToken(authResponse.registration_token);
+
+            setName("");
+            setStep("name");
+
+            setMessage("Your number is verified. Please enter your name.");
+
+            setLoading(false);
+
+            return;
+          }
+
+          // -----------------------------------------
+          // RETURNING USER
+          // -----------------------------------------
+
+          if (
+            !authResponse.access_token ||
+            !authResponse.refresh_token ||
+            authResponse.user_id === undefined ||
+            !authResponse.session_id
+          ) {
+            throw new Error(
+              "Authentication succeeded, but required session data was not returned.",
+            );
+          }
 
           saveAuth({
             accessToken: authResponse.access_token,
@@ -1403,6 +747,10 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             userId: authResponse.user_id,
             sessionId: authResponse.session_id,
           });
+
+          if (authResponse.name) {
+            localStorage.setItem("lightningq_user_name", authResponse.name);
+          }
 
           setMessage("Login successful.");
 
@@ -1501,9 +849,78 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
     setReqId(null);
 
-    setError("");
+    setRegistrationToken(null);
 
+    setError("");
     setMessage("");
+  };
+
+  const createAccount = async () => {
+    setError("");
+    setMessage("");
+
+    const cleanedName = name.trim();
+
+    if (cleanedName.length < 2) {
+      setError("Please enter a valid name.");
+      return;
+    }
+
+    if (!registrationToken) {
+      setError("Your verification session has expired. Please try again.");
+
+      setStep("mobile");
+
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log("Creating LightningQ user account...");
+
+      const authResponse = await registerUser(registrationToken, cleanedName);
+
+      if (
+        !authResponse.access_token ||
+        !authResponse.refresh_token ||
+        authResponse.user_id === undefined ||
+        !authResponse.session_id
+      ) {
+        throw new Error(
+          "Account was created, but session data was not returned.",
+        );
+      }
+
+      saveAuth({
+        accessToken: authResponse.access_token,
+
+        refreshToken: authResponse.refresh_token,
+
+        userId: authResponse.user_id,
+
+        sessionId: authResponse.session_id,
+      });
+
+      localStorage.setItem(
+        "lightningq_user_name",
+        authResponse.name ?? cleanedName,
+      );
+
+      setMessage("Account created successfully.");
+
+      router.push("/agent");
+    } catch (error: unknown) {
+      console.error("Account creation failed:", error);
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to create your account.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1524,13 +941,15 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
           {step === "mobile" ? (
             <>
-              <h2 className="mt-3 text-3xl font-semibold">Welcome back.</h2>
+              <h2 className="mt-3 text-3xl font-semibold">
+                Welcome to LightningQ.
+              </h2>
 
               <p className="mt-2 text-sm leading-6 text-white/40">
-                Sign in to continue with your LightningQ AI agent.
+                Enter your phone number to continue.
               </p>
             </>
-          ) : (
+          ) : step === "otp" ? (
             <>
               <h2 className="mt-3 text-3xl font-semibold">
                 Verify your number.
@@ -1541,6 +960,17 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 <span className="text-white/70">+91 {mobile}</span>
               </p>
             </>
+          ) : (
+            <>
+              <h2 className="mt-3 text-3xl font-semibold">
+                Welcome to LightningQ.
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-white/40">
+                Your phone number is verified. Tell us your name to create your
+                account.
+              </p>
+            </>
           )}
         </div>
 
@@ -1548,51 +978,64 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
         {step === "mobile" && (
           <>
-            <label className="mb-2 block text-sm text-white/65">
-              Mobile number
-            </label>
+            <div className="space-y-5">
+              {/* <div>
+                <label className="mb-2 block text-sm text-white/65">
+                  Your name
+                </label>
 
-            <div className="flex overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] focus-within:border-cyan-300/40">
-              <span className="border-r border-white/10 px-4 py-4 text-sm text-white/40">
-                +91
-              </span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter your name"
+                  autoComplete="name"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/40"
+                />
+              </div> */}
 
-              <input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                maxLength={10}
-                value={mobile}
-                onChange={(event) => {
-                  setMobile(event.target.value.replace(/\D/g, "").slice(0, 10));
+              <div>
+                <label className="mb-2 block text-sm text-white/65">
+                  Mobile number
+                </label>
 
-                  setError("");
-                }}
-                placeholder="Enter mobile number"
-                className="flex-1 bg-transparent px-4 text-sm text-white outline-none placeholder:text-white/25"
-              />
+                <div className="flex overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] focus-within:border-cyan-300/40">
+                  <span className="border-r border-white/10 px-4 py-4 text-sm text-white/40">
+                    +91
+                  </span>
+
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    maxLength={10}
+                    value={mobile}
+                    onChange={(event) => {
+                      setMobile(
+                        event.target.value.replace(/\D/g, "").slice(0, 10),
+                      );
+
+                      setError("");
+                    }}
+                    placeholder="Enter mobile number"
+                    className="flex-1 bg-transparent px-4 text-sm text-white outline-none placeholder:text-white/25"
+                  />
+                </div>
+              </div>
+
+              {error && <ErrorMessage message={error} />}
+
+              <button
+                onClick={sendOtp}
+                disabled={loading || mobile.length !== 10 || !sdkReady}
+                className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 py-4 text-sm font-semibold text-black transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? "Sending OTP..." : "Continue →"}
+              </button>
             </div>
-
-            {error && <ErrorMessage message={error} />}
-
-            <button
-              onClick={sendOtp}
-              disabled={loading || mobile.length !== 10 || !sdkReady}
-              className="mt-5 w-full rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 py-4 text-sm font-semibold text-black transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {loading ? "Sending OTP..." : "Continue →"}
-            </button>
-
-            {!sdkReady && (
-              <p className="mt-3 text-center text-xs text-white/25">
-                Initializing secure OTP...
-              </p>
-            )}
-
-            <p className="mt-5 text-center text-xs text-white/25">
-              Your number is used to securely authenticate your LightningQ
-              account.
-            </p>
           </>
         )}
 
@@ -1679,6 +1122,46 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         >
           Cancel
         </button>
+        {/* NAME */}
+
+        {step === "name" && (
+          <>
+            <div className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm text-white/65">
+                  Your name
+                </label>
+
+                <input
+                  type="text"
+                  value={name}
+                  autoFocus
+                  autoComplete="name"
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter your name"
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/40"
+                />
+              </div>
+
+              {message && <p className="text-sm text-cyan-300">{message}</p>}
+
+              {error && <ErrorMessage message={error} />}
+
+              <button
+                onClick={createAccount}
+                disabled={
+                  loading || name.trim().length < 2 || !registrationToken
+                }
+                className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 py-4 text-sm font-semibold text-black transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {loading ? "Creating account..." : "Create account →"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

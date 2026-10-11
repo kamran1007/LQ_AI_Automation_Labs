@@ -6,21 +6,32 @@ export type UserAuthResponse = {
   success: boolean;
   message?: string;
 
-  access_token: string;
-  refresh_token: string;
+  requires_name?: boolean;
+  is_new_user?: boolean;
 
-  token_type: string;
+  registration_token?: string;
 
-  user_id: number;
-  session_id: string;
+  access_token?: string;
+  refresh_token?: string;
+
+  token_type?: string;
+
+  user_id?: number;
+  session_id?: string;
+
+  mobile?: string;
+  name?: string;
+  is_verified?: boolean;
 
   expires_at?: string;
 };
 
+
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
+
   const response = await fetch(
     `${API_BASE_URL}${path}`,
     {
@@ -28,33 +39,33 @@ async function request<T>(
 
       headers: {
         "Content-Type": "application/json",
-
         ...(options.headers || {}),
       },
-    }
+    },
   );
 
   let data: unknown;
 
   try {
     data = await response.json();
+
   } catch {
     throw new Error(
-      "Invalid response from server."
+      "Invalid response from server.",
     );
   }
 
   if (!response.ok) {
-    const errorData =
-      data as {
-        detail?: string;
-        message?: string;
-      };
+
+    const errorData = data as {
+      detail?: string;
+      message?: string;
+    };
 
     throw new Error(
       errorData?.detail ||
-        errorData?.message ||
-        "Request failed."
+      errorData?.message ||
+      "Request failed.",
     );
   }
 
@@ -62,12 +73,14 @@ async function request<T>(
 }
 
 
-/**
- * Send MSG91 access token to LightningQ backend.
- */
+// ============================================================
+// MSG91 VERIFY
+// ============================================================
+
 export async function verifyMsg91Token(
-  accessToken: string
+  accessToken: string,
 ): Promise<UserAuthResponse> {
+
   return request<UserAuthResponse>(
     "/ai/authuser/verify",
     {
@@ -76,17 +89,42 @@ export async function verifyMsg91Token(
       body: JSON.stringify({
         access_token: accessToken,
       }),
-    }
+    },
   );
 }
 
 
-/**
- * Refresh LightningQ access token.
- */
-export async function refreshUserToken(
-  refreshToken: string
+// ============================================================
+// REGISTER NEW USER
+// ============================================================
+
+export async function registerUser(
+  registrationToken: string,
+  name: string,
 ): Promise<UserAuthResponse> {
+
+  return request<UserAuthResponse>(
+    "/ai/authuser/register",
+    {
+      method: "POST",
+
+      body: JSON.stringify({
+        registration_token: registrationToken,
+        name: name.trim(),
+      }),
+    },
+  );
+}
+
+
+// ============================================================
+// REFRESH
+// ============================================================
+
+export async function refreshUserToken(
+  refreshToken: string,
+): Promise<UserAuthResponse> {
+
   return request<UserAuthResponse>(
     "/ai/authuser/refresh",
     {
@@ -95,17 +133,19 @@ export async function refreshUserToken(
       body: JSON.stringify({
         refresh_token: refreshToken,
       }),
-    }
+    },
   );
 }
 
 
-/**
- * Logout LightningQ user.
- */
+// ============================================================
+// LOGOUT
+// ============================================================
+
 export async function logoutUser(
-  accessToken: string
+  accessToken: string,
 ) {
+
   return request<{
     success: boolean;
     message: string;
@@ -118,6 +158,6 @@ export async function logoutUser(
         Authorization:
           `Bearer ${accessToken}`,
       },
-    }
+    },
   );
 }
